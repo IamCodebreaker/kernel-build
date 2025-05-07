@@ -103,30 +103,3 @@ jobs:
           Config: ${{ github.event.inputs.KERNEL_DEFCONFIG }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Update TG
-      uses: appleboy/telegram-action@master
-      with:
-        to: ${{ secrets.CHAT_ID }}
-        token: ${{ secrets.BOT_TOKEN }}
-        format: html
-        disable_web_page_preview: true
-        message: |
-          <b>Amogus-Kernel Update</b>
-
-          <b>Build Date: </b>${{ env.BUILD_DATE }}
-          
-          <a href="https://github.com/${{ github.repository }}/releases/tag/${{ env.BUILD_DATE }}">Download</a>
-
-          <a href="https://github.com/rifsxd/KernelSU-Next/releases/tag/${{ github.event.inputs.KSUNEXT_VERSION }}">Download KSU app</a>
-          
-          <a href="${{ github.event.inputs.KERNEL_REPO }}/commits/${{ github.event.inputs.KERNEL_BRANCH }}">Changelogs</a>
-
-          <b>What's new:</b>
-          ${{ github.event.inputs.KERNEL_HOTFIX }}
-
-          <b>Config: </b>${{ github.event.inputs.KERNEL_DEFCONFIG }}
-          <b>Kernel Ver: </b>${{ env.KERNEL_VER }}
-          <b>Clang Ver: </b>${{ env.CLANG_VER }}
-          <b>KSU-Next Ver: </b>${{ github.event.inputs.KSUNEXT_VERSION }}
-          <b>Maintainer: </b>@AnotherZain
