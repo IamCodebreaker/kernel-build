@@ -1,0 +1,76 @@
+name: Kernel Build 3.4.113
+
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_REPO:
+        description: 'KERNEL_REPO'
+        required: true
+        default: 'https://github.com/torvalds/linux.git'
+      KERNEL_BRANCH:
+        description: 'KERNEL_BRANCH'
+        required: true
+        default: 'linux-3.4.y'
+      KERNEL_DEFCONFIG:
+        description: 'KERNEL_DEFCONFIG'
+        required: true
+        default: 'defconfig'
+      KSUNEXT_VERSION:
+        description: 'KSUNEXT_VERSION'
+        required: false
+        default: 'N/A'
+      KERNEL_HOTFIX:
+        description: 'KERNEL_HOTFIX'
+        required: false
+        default: 'N/A'
+
+jobs:
+  build:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+
+    - name: Prepare Env
+      run: |
+        sudo apt update &> /dev/null
+        sudo apt -y install build-essential libncurses5-dev bison flex libssl-dev libelf-dev bc curl git python3 &> /dev/null
+        git config --global user.name "bot"
+        git config --global user.email "bot@email.com"
+        mkdir -p $GITHUB_WORKSPACE/project
+
+    - name: Prepare Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/project
+        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.event.inputs.KERNEL_REPO }} linux --depth=1
+
+    - name: Building Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/project/linux
+        export ARCH=arm64
+        export CROSS_COMPILE=aarch64-linux-gnu-
+        export KBUILD_BUILD_HOST=builder
+        export KBUILD_BUILD_USER=bot
+        make O=out ARCH=$ARCH ${{ github.event.inputs.KERNEL_DEFCONFIG }}
+        make -j$(nproc --all) O=out ARCH=$ARCH CROSS_COMPILE=$CROSS_COMPILE
+
+    - name: Package Kernel
+      run: |
+        cd $GITHUB_WORKSPACE/project/linux
+        mkdir -p $GITHUB_WORKSPACE/project/artifacts
+        cp out/arch/arm64/boot/Image.gz $GITHUB_WORKSPACE/project/artifacts/Image.gz
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ${{ github.workspace }}/project/artifacts/Image.gz
+        name: Kernel-3.4.113-${{ github.run_id }}
+        tag_name: kernel-3.4.113-${{ github.run_id }}
+        body: |
+          Repo: ${{ github.event.inputs.KERNEL_REPO }}
+          Branch: ${{ github.event.inputs.KERNEL_BRANCH }}
+          Config: ${{ github.event.inputs.KERNEL_DEFCONFIG }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
